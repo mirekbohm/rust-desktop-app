@@ -2,8 +2,7 @@
 Cargo.lock
 *.pdb
 .env
-.DS_Store
 *.log
 *.tmp
 desktop-app.exe
-desktop-app
+*.exe

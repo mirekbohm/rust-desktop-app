@@ -22,3 +22,19 @@ fastrand = "2.3.0"
 [profile.release]
 opt-level = 2
 strip = true
+lto = true
+codegen-units = 1
+
+# Windows-specific configuration
+[target.'cfg(windows)'.dependencies]
+winapi = { version = "0.3", features = ["winuser"] }
+
+# Hide console window in release builds
+[[bin]]
+name = "desktop-app"
+path = "src/main.rs"
+
+[package.metadata.winres]
+ProductName = "Desktop Application"
+FileDescription = "Desktop Application with Auto-Update"
+LegalCopyright = "Copyright (c) 2025"

@@ -10,29 +10,8 @@ permissions:
 
 jobs:
   build:
-    name: Build and Release
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        include:
-          - os: ubuntu-latest
-            target: x86_64-unknown-linux-gnu
-            artifact_name: desktop-app
-            asset_name: desktop-app-linux-x86_64
-            archive_cmd: tar -czf
-            archive_ext: tar.gz
-          - os: windows-latest
-            target: x86_64-pc-windows-msvc
-            artifact_name: desktop-app.exe
-            asset_name: desktop-app-windows-x86_64.exe
-            archive_cmd: 7z a
-            archive_ext: zip
-          - os: macos-latest
-            target: x86_64-apple-darwin
-            artifact_name: desktop-app
-            asset_name: desktop-app-macos-x86_64
-            archive_cmd: tar -czf
-            archive_ext: tar.gz
+    name: Build Windows Release
+    runs-on: windows-latest
 
     steps:
     - name: Checkout code
@@ -41,53 +20,54 @@ jobs:
     - name: Install Rust
       uses: dtolnay/rust-toolchain@stable
       with:
-        targets: ${{ matrix.target }}
-
-    - name: Install system dependencies (Ubuntu)
-      if: matrix.os == 'ubuntu-latest'
-      run: |
-        sudo apt-get update
-        sudo apt-get install -y libgtk-3-dev libwebkit2gtk-4.0-dev libappindicator3-dev librsvg2-dev patchelf
+        targets: x86_64-pc-windows-msvc
 
     - name: Cache cargo registry
       uses: actions/cache@v3
       with:
         path: ~/.cargo/registry
-        key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
+        key: windows-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Cache cargo index
       uses: actions/cache@v3
       with:
         path: ~/.cargo/git
-        key: ${{ runner.os }}-cargo-index-${{ hashFiles('**/Cargo.lock') }}
+        key: windows-cargo-index-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Cache target directory
       uses: actions/cache@v3
       with:
         path: target
-        key: ${{ runner.os }}-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
+        key: windows-cargo-build-target-${{ hashFiles('**/Cargo.lock') }}
 
     - name: Build release
-      run: cargo build --release --target ${{ matrix.target }}
+      run: cargo build --release --target x86_64-pc-windows-msvc
 
-    - name: Create archive (Unix)
-      if: matrix.os != 'windows-latest'
+    - name: Create release directory
       run: |
-        cd target/${{ matrix.target }}/release
-        ${{ matrix.archive_cmd }} ${{ matrix.asset_name }}.${{ matrix.archive_ext }} ${{ matrix.artifact_name }}
-
-    - name: Create archive (Windows)
-      if: matrix.os == 'windows-latest'
-      run: |
-        cd target/${{ matrix.target }}/release
-        copy ${{ matrix.artifact_name }} ${{ matrix.asset_name }}
+        mkdir release-assets
+        copy target\x86_64-pc-windows-msvc\release\desktop-app.exe release-assets\desktop-app-windows-x86_64.exe
 
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          target/${{ matrix.target }}/release/${{ matrix.asset_name }}*
+          release-assets/desktop-app-windows-x86_64.exe
         draft: false
         prerelease: false
+        body: |
+          ## Windows Desktop Application Release
+          
+          ### Changes
+          - Windows x64 executable included
+          - Auto-update functionality enabled
+          
+          ### Installation
+          1. Download `desktop-app-windows-x86_64.exe`
+          2. Run the executable
+          
+          ### Requirements
+          - Windows 10 or later
+          - No additional dependencies required
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
