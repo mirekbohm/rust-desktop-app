@@ -2,7 +2,7 @@ use eframe::egui;
 use std::sync::mpsc;
 use std::thread;
 
-use crate::data::{DataStore, TableData};
+use crate::data::DataStore;
 use crate::export::ExcelExporter;
 use crate::updater::AppUpdater;
 

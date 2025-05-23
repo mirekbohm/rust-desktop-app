@@ -15,8 +15,8 @@ impl AppUpdater {
     pub async fn check_for_updates(&self) -> Result<Option<String>> {
         // Replace with your actual GitHub username and repository name
         let releases = self_update::backends::github::ReleaseList::configure()
-            .repo_owner("YOUR_USERNAME")      // Replace with your GitHub username
-            .repo_name("YOUR_REPO_NAME")      // Replace with your repository name
+            .repo_owner("mirekbohm") 
+            .repo_name("rust-desktop-app") 
             .build()?
             .fetch()?;
 
@@ -35,9 +35,9 @@ impl AppUpdater {
 
     pub async fn update_app(&self) -> Result<()> {
         let status = self_update::backends::github::Update::configure()
-            .repo_owner("YOUR_USERNAME")      // Replace with your GitHub username
-            .repo_name("YOUR_REPO_NAME")      // Replace with your repository name
-            .bin_name("desktop-app")          // Your binary name
+            .repo_owner("mirekbohm") 
+            .repo_name("rust-desktop-app")
+            .bin_name("desktop-app") 
             .show_download_progress(true)
             .current_version(cargo_crate_version!())
             .build()?
