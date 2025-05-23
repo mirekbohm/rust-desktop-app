@@ -382,18 +382,18 @@ impl DesktopApp {
                 ui.add_space(20.0);
 
                 ui.label(format!("Version: {} (Updated!)", env!("CARGO_PKG_VERSION")));
-                ui.label("Built with Rust and egui");
+                ui.label("Built with Rust, egui and LOVE");
                 ui.label("🎉 This is the updated version!");
                 ui.add_space(20.0);
 
                 ui.label("Features:");
-                ui.label("• Cross-platform desktop GUI");
+                ui.label("• Windows compatible desktop GUI");
                 ui.label("• Excel export functionality");
                 ui.label("• Automatic updates from GitHub");
                 ui.label("• Modern, responsive interface");
 
                 ui.add_space(30.0);
-                ui.hyperlink_to("🌐 Visit GitHub Repository", "https://github.com/yourusername/your-repo");
+                ui.hyperlink_to("🌐 Visit GitHub Repository", "https://github.com/mirekbohm/rust-desktop-app");
             });
         });
     }
