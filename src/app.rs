@@ -237,8 +237,9 @@ impl DesktopApp {
                 ui.heading("About Desktop Application");
                 ui.add_space(20.0);
 
-                ui.label(format!("Version: {}", env!("CARGO_PKG_VERSION")));
+                ui.label(format!("Version: {} (Updated!)", env!("CARGO_PKG_VERSION")));
                 ui.label("Built with Rust and egui");
+                ui.label("🎉 This is the updated version!");  // Add this line
                 ui.add_space(20.0);
 
                 ui.label("Features:");
@@ -248,7 +249,7 @@ impl DesktopApp {
                 ui.label("• Modern, responsive interface");
 
                 ui.add_space(30.0);
-                ui.hyperlink_to("🌐 Visit GitHub Repository", "https://github.com/yourusername/your-repo");
+                ui.hyperlink_to("🌐 Visit GitHub Repository", "https://github.com/mirekbohm/rust-desktop-app");
             });
         });
     }
