@@ -382,7 +382,7 @@ impl DesktopApp {
                 ui.add_space(20.0);
 
                 ui.label(format!("Version: {} (Updated!)", env!("CARGO_PKG_VERSION")));
-                ui.label("Built with Rust, egui, love and a bit of weed");
+                ui.label("Built with Rust, egui, love and coca cola");
                 ui.add_space(20.0);
 
                 ui.label("Features:");

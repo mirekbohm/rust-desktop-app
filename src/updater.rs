@@ -35,9 +35,10 @@ impl AppUpdater {
 
     pub async fn update_app(&self) -> Result<()> {
         let status = self_update::backends::github::Update::configure()
-            .repo_owner("mirekbohm") 
-            .repo_name("rust-desktop-app")
+            .repo_owner("mirekbohm")  
+            .repo_name("rust-desktop-app")  
             .bin_name("desktop-app") 
+            .target("x86_64-pc-windows-msvc") 
             .show_download_progress(true)
             .current_version(cargo_crate_version!())
             .build()?

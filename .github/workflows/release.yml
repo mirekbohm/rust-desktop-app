@@ -43,31 +43,44 @@ jobs:
     - name: Build release
       run: cargo build --release --target x86_64-pc-windows-msvc
 
-    - name: Create release directory
+    - name: Create release directory and copy assets
       run: |
         mkdir release-assets
+        # Copy with the exact name format that self_update expects
+        copy target\x86_64-pc-windows-msvc\release\desktop-app.exe release-assets\desktop-app-x86_64-pc-windows-msvc.exe
+        # Also create a user-friendly named version
         copy target\x86_64-pc-windows-msvc\release\desktop-app.exe release-assets\desktop-app-windows-x86_64.exe
 
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v1
       with:
         files: |
-          release-assets/desktop-app-windows-x86_64.exe
+          release-assets/*
         draft: false
         prerelease: false
         body: |
-          ## Windows Desktop Application Release
-          
-          ### Changes
-          - Windows x64 executable included
-          - Auto-update functionality enabled
+          ## Windows Desktop Application Release ${{ github.ref_name }}
           
           ### Installation
-          1. Download `desktop-app-windows-x86_64.exe`
-          2. Run the executable
+          1. Download `desktop-app-windows-x86_64.exe` (user-friendly name)
+          2. If Windows shows a security warning, click "More info" then "Run anyway"
+          3. Run the executable
+          
+          ### Features
+          - No console window (clean launch)
+          - Auto-update functionality
+          - Excel export capabilities
+          - Professional Windows integration
           
           ### Requirements
           - Windows 10 or later
           - No additional dependencies required
+          
+          ### Files
+          - `desktop-app-windows-x86_64.exe` - Main executable (user download)
+          - `desktop-app-x86_64-pc-windows-msvc.exe` - Auto-update target
+          
+          ### Security Note
+          This application is not digitally signed. Windows may show a SmartScreen warning on first run.
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
