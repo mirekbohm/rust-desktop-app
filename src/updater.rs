@@ -12,33 +12,32 @@ impl AppUpdater {
         }
     }
 
-    pub async fn check_for_updates(&self) -> Result<bool> {
+    pub async fn check_for_updates(&self) -> Result<Option<String>> {
         // Replace with your actual GitHub username and repository name
         let releases = self_update::backends::github::ReleaseList::configure()
-            .repo_owner("mirekbohm")      // Replace with your GitHub username
-            .repo_name("rust-desktop-app")      // Replace with your repository name
+            .repo_owner("YOUR_USERNAME")      // Replace with your GitHub username
+            .repo_name("YOUR_REPO_NAME")      // Replace with your repository name
             .build()?
             .fetch()?;
 
         if let Some(latest_release) = releases.first() {
             let latest_version = &latest_release.version;
             
-            // Simple version comparison (you might want to use a proper semver library)
+            // Simple version comparison
             if latest_version != &self.current_version {
                 println!("New version available: {}", latest_version);
-                return Ok(true);
+                return Ok(Some(latest_version.clone()));
             }
         }
         
-        Ok(false)
+        Ok(None)
     }
 
-    #[allow(dead_code)]
     pub async fn update_app(&self) -> Result<()> {
         let status = self_update::backends::github::Update::configure()
-            .repo_owner("mirekbohm") 
-            .repo_name("rust-desktop-app")
-            .bin_name("desktop-app") 
+            .repo_owner("YOUR_USERNAME")      // Replace with your GitHub username
+            .repo_name("YOUR_REPO_NAME")      // Replace with your repository name
+            .bin_name("desktop-app")          // Your binary name
             .show_download_progress(true)
             .current_version(cargo_crate_version!())
             .build()?

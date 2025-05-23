@@ -15,13 +15,37 @@ pub enum AppPage {
     About,
 }
 
+#[derive(Default)]
+pub enum UpdateState {
+    #[default]
+    Idle,
+    Checking,
+    Available(String), // Contains the new version number
+    Downloading,
+    Downloaded,
+    Error(String),
+}
+
 pub struct DesktopApp {
     current_page: AppPage,
     data_store: DataStore,
     excel_exporter: ExcelExporter,
     updater: AppUpdater,
     update_status: String,
-    update_receiver: Option<mpsc::Receiver<String>>,
+    update_receiver: Option<mpsc::Receiver<UpdateResult>>,
+    
+    // Update dialog state
+    update_state: UpdateState,
+    show_update_dialog: bool,
+    available_version: String,
+}
+
+#[derive(Debug)]
+enum UpdateResult {
+    UpdateAvailable(String),
+    NoUpdate,
+    UpdateDownloaded,
+    Error(String),
 }
 
 impl DesktopApp {
@@ -33,6 +57,9 @@ impl DesktopApp {
             updater: AppUpdater::new(),
             update_status: "Ready".to_string(),
             update_receiver: None,
+            update_state: UpdateState::default(),
+            show_update_dialog: false,
+            available_version: String::new(),
         }
     }
 
@@ -86,10 +113,129 @@ impl DesktopApp {
                 });
 
                 ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                    ui.label(&self.update_status);
+                    match &self.update_state {
+                        UpdateState::Checking => ui.label("🔄 Checking for updates..."),
+                        UpdateState::Downloading => ui.label("⬇️ Downloading update..."),
+                        UpdateState::Downloaded => ui.label("✅ Update ready! Restart app."),
+                        UpdateState::Error(_) => ui.label("❌ Update check failed"),
+                        _ => ui.label(&self.update_status),
+                    };
                 });
             });
         });
+    }
+
+    fn show_update_dialog(&mut self, ctx: &egui::Context) {
+        if !self.show_update_dialog {
+            return;
+        }
+
+        egui::Window::new("Update Available")
+            .collapsible(false)
+            .resizable(false)
+            .anchor(egui::Align2::CENTER_CENTER, [0.0, 0.0])
+            .show(ctx, |ui| {
+                ui.set_min_width(400.0);
+                
+                // Header with icon and title
+                ui.horizontal(|ui| {
+                    ui.label("🎉");
+                    ui.heading("New Version Available!");
+                });
+                
+                ui.add_space(10.0);
+                ui.separator();
+                ui.add_space(10.0);
+
+                // Version information
+                ui.horizontal(|ui| {
+                    ui.label("Current version:");
+                    ui.strong(env!("CARGO_PKG_VERSION"));
+                });
+                
+                ui.horizontal(|ui| {
+                    ui.label("New version:");
+                    ui.strong(&self.available_version);
+                });
+
+                ui.add_space(15.0);
+
+                // Update description
+                ui.label("A new version of the application is available for download.");
+                ui.label("Would you like to update now?");
+
+                ui.add_space(20.0);
+
+                // Show different content based on update state
+                match &self.update_state {
+                    UpdateState::Available(_) => {
+                        ui.horizontal(|ui| {
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                if ui.button("❌ Later").clicked() {
+                                    self.show_update_dialog = false;
+                                    self.update_state = UpdateState::Idle;
+                                }
+                                
+                                if ui.button("⬇️ Update Now").clicked() {
+                                    self.download_update(ctx);
+                                }
+                            });
+                        });
+                    }
+                    
+                    UpdateState::Downloading => {
+                        ui.horizontal(|ui| {
+                            ui.spinner();
+                            ui.label("Downloading update...");
+                        });
+                        ui.add_space(10.0);
+                        ui.label("Please wait while the update is being downloaded.");
+                    }
+                    
+                    UpdateState::Downloaded => {
+                        ui.colored_label(egui::Color32::GREEN, "✅ Update downloaded successfully!");
+                        ui.add_space(10.0);
+                        ui.label("Please restart the application to complete the update.");
+                        
+                        ui.add_space(15.0);
+                        ui.horizontal(|ui| {
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                if ui.button("🔄 Restart Now").clicked() {
+                                    // Restart the application
+                                    std::process::exit(0);
+                                }
+                                
+                                if ui.button("📋 Continue").clicked() {
+                                    self.show_update_dialog = false;
+                                    self.update_state = UpdateState::Idle;
+                                }
+                            });
+                        });
+                    }
+                    
+                    UpdateState::Error(error) => {
+                        ui.colored_label(egui::Color32::RED, "❌ Update failed!");
+                        ui.add_space(5.0);
+                        ui.label(format!("Error: {}", error));
+                        
+                        ui.add_space(15.0);
+                        ui.horizontal(|ui| {
+                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
+                                if ui.button("❌ Close").clicked() {
+                                    self.show_update_dialog = false;
+                                    self.update_state = UpdateState::Idle;
+                                }
+                                
+                                if ui.button("🔄 Retry").clicked() {
+                                    self.download_update(ctx);
+                                }
+                            });
+                        });
+                    }
+                    
+                    _ => {}
+                }
+            });
     }
 
     fn show_home_page(&mut self, ctx: &egui::Context) {
@@ -102,11 +248,9 @@ impl DesktopApp {
                     self.data_store.add_sample_data();
                 }
                 if ui.button("🚀 Action Button 2").clicked() {
-                    // Add some action
                     self.update_status = "Action 2 performed!".to_string();
                 }
                 if ui.button("💫 Action Button 3").clicked() {
-                    // Add some action
                     self.update_status = "Action 3 performed!".to_string();
                 }
             });
@@ -239,7 +383,7 @@ impl DesktopApp {
 
                 ui.label(format!("Version: {} (Updated!)", env!("CARGO_PKG_VERSION")));
                 ui.label("Built with Rust and egui");
-                ui.label("🎉 This is the updated version!");  // Add this line
+                ui.label("🎉 This is the updated version!");
                 ui.add_space(20.0);
 
                 ui.label("Features:");
@@ -249,7 +393,7 @@ impl DesktopApp {
                 ui.label("• Modern, responsive interface");
 
                 ui.add_space(30.0);
-                ui.hyperlink_to("🌐 Visit GitHub Repository", "https://github.com/mirekbohm/rust-desktop-app");
+                ui.hyperlink_to("🌐 Visit GitHub Repository", "https://github.com/yourusername/your-repo");
             });
         });
     }
@@ -267,28 +411,51 @@ impl DesktopApp {
     }
 
     fn check_for_updates(&mut self, ctx: &egui::Context) {
-        self.update_status = "Checking for updates...".to_string();
+        self.update_state = UpdateState::Checking;
         
         let (tx, rx) = mpsc::channel();
         self.update_receiver = Some(rx);
         
         let ctx_clone = ctx.clone();
         
-        // Spawn a thread to handle the async update check
         thread::spawn(move || {
             let rt = tokio::runtime::Runtime::new().unwrap();
             rt.block_on(async {
                 let updater = AppUpdater::new();
                 match updater.check_for_updates().await {
-                    Ok(has_update) => {
-                        if has_update {
-                            let _ = tx.send("Update available! Please check the repository.".to_string());
-                        } else {
-                            let _ = tx.send("No updates available.".to_string());
-                        }
+                    Ok(Some(version)) => {
+                        let _ = tx.send(UpdateResult::UpdateAvailable(version));
+                    }
+                    Ok(None) => {
+                        let _ = tx.send(UpdateResult::NoUpdate);
                     }
                     Err(e) => {
-                        let _ = tx.send(format!("Update check failed: {}", e));
+                        let _ = tx.send(UpdateResult::Error(e.to_string()));
+                    }
+                }
+                ctx_clone.request_repaint();
+            });
+        });
+    }
+
+    fn download_update(&mut self, ctx: &egui::Context) {
+        self.update_state = UpdateState::Downloading;
+        
+        let (tx, rx) = mpsc::channel();
+        self.update_receiver = Some(rx);
+        
+        let ctx_clone = ctx.clone();
+        
+        thread::spawn(move || {
+            let rt = tokio::runtime::Runtime::new().unwrap();
+            rt.block_on(async {
+                let updater = AppUpdater::new();
+                match updater.update_app().await {
+                    Ok(_) => {
+                        let _ = tx.send(UpdateResult::UpdateDownloaded);
+                    }
+                    Err(e) => {
+                        let _ = tx.send(UpdateResult::Error(e.to_string()));
                     }
                 }
                 ctx_clone.request_repaint();
@@ -298,8 +465,27 @@ impl DesktopApp {
 
     fn check_update_result(&mut self) {
         if let Some(ref receiver) = self.update_receiver {
-            if let Ok(message) = receiver.try_recv() {
-                self.update_status = message;
+            if let Ok(result) = receiver.try_recv() {
+                match result {
+                    UpdateResult::UpdateAvailable(version) => {
+                        self.available_version = version.clone();
+                        self.update_state = UpdateState::Available(version);
+                        self.show_update_dialog = true;
+                        self.update_status = "Update available!".to_string();
+                    }
+                    UpdateResult::NoUpdate => {
+                        self.update_state = UpdateState::Idle;
+                        self.update_status = "No updates available.".to_string();
+                    }
+                    UpdateResult::UpdateDownloaded => {
+                        self.update_state = UpdateState::Downloaded;
+                        self.update_status = "Update downloaded!".to_string();
+                    }
+                    UpdateResult::Error(error) => {
+                        self.update_state = UpdateState::Error(error.clone());
+                        self.update_status = format!("Update failed: {}", error);
+                    }
+                }
                 self.update_receiver = None;
             }
         }
@@ -319,5 +505,8 @@ impl eframe::App for DesktopApp {
             AppPage::Settings => self.show_settings_page(ctx),
             AppPage::About => self.show_about_page(ctx),
         }
+
+        // Show update dialog if needed
+        self.show_update_dialog(ctx);
     }
 }
