@@ -1,6 +1,6 @@
 [package]
 name = "desktop-app"
-version = "0.4.1"
+version = "0.4.2"
 edition = "2024"
 
 [dependencies]
@@ -19,22 +19,21 @@ env_logger = "0.11.8"
 egui_extras = "0.31.1"
 fastrand = "2.3.0"
 
+[target.'cfg(windows)'.build-dependencies]
+winres = "0.1"
+
+# Configure the binary to not show console
+[[bin]]
+name = "desktop-app"
+path = "src/main.rs"
+
+[package.metadata.bundle]
+name = "Desktop Application"
+identifier = "com.yourcompany.desktop-app"
+version = "0.4.2"
+
 [profile.release]
 opt-level = 2
 strip = true
 lto = true
 codegen-units = 1
-
-# Windows-specific configuration
-[target.'cfg(windows)'.dependencies]
-winapi = { version = "0.3", features = ["winuser"] }
-
-# Hide console window in release builds
-[[bin]]
-name = "desktop-app"
-path = "src/main.rs"
-
-[package.metadata.winres]
-ProductName = "Desktop Application"
-FileDescription = "Desktop Application with Auto-Update"
-LegalCopyright = "Copyright (c) 2025"
