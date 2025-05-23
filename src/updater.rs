@@ -13,40 +13,32 @@ impl AppUpdater {
     }
 
     pub async fn check_for_updates(&self) -> Result<bool> {
-        // For now, let's simulate an update check
-        // Replace this with actual GitHub API call when you have a real repository
-        tokio::time::sleep(tokio::time::Duration::from_secs(2)).await;
-        
-        // Uncomment and modify this when you have a real repository:
-        /*
+        // Replace with your actual GitHub username and repository name
         let releases = self_update::backends::github::ReleaseList::configure()
-            .repo_owner("yourusername")  // Replace with your GitHub username
-            .repo_name("your-repo")      // Replace with your repository name
+            .repo_owner("mirekbohm")      // Replace with your GitHub username
+            .repo_name("rust-desktop-app")      // Replace with your repository name
             .build()?
-            .fetch()
-            .await?;
+            .fetch()?;
 
         if let Some(latest_release) = releases.first() {
             let latest_version = &latest_release.version;
             
-            // Compare versions (simplified comparison)
+            // Simple version comparison (you might want to use a proper semver library)
             if latest_version != &self.current_version {
                 println!("New version available: {}", latest_version);
                 return Ok(true);
             }
         }
-        */
         
-        // For demonstration, randomly return whether an update is available
-        Ok(fastrand::bool())
+        Ok(false)
     }
 
     #[allow(dead_code)]
     pub async fn update_app(&self) -> Result<()> {
         let status = self_update::backends::github::Update::configure()
-            .repo_owner("yourusername")  // Replace with your GitHub username
-            .repo_name("your-repo")      // Replace with your repository name
-            .bin_name("desktop-app")     // Your binary name
+            .repo_owner("mirekbohm") 
+            .repo_name("rust-desktop-app")
+            .bin_name("desktop-app") 
             .show_download_progress(true)
             .current_version(cargo_crate_version!())
             .build()?
